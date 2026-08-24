@@ -13,8 +13,8 @@ jobs:
 
       - name: Extract project
         run: |
-          mkdir project
-          unzip DualPlayerSource.zip -d project
+          mkdir -p project
+          unzip -o DualPlayerSource.zip -d project
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -30,11 +30,28 @@ jobs:
       - name: Fix JVM target
         run: |
           cd project
-          find . -name "*.gradle" -type f -print0 | xargs -0 sed -i \
-            -e 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' \
-            -e 's/jvmTarget *= *["'\'']1\.8["'\'']/jvmTarget = '\''17'\''/g'
+          cat > jvm-fix.gradle <<'EOF'
+          allprojects {
+              tasks.withType(JavaCompile).configureEach {
+                  options.release = 17
+              }
+
+              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                  kotlinOptions.jvmTarget = "17"
+              }
+          }
+          EOF
 
       - name: Build APK
+        run: |
+          cd project
+          gradle -I jvm-fix.gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DualPlayer-debug-apk
+          path: project/app/build/outputs/apk/debug/app-debug.apk      - name: Build APK
         run: |
           cd project
           gradle assembleDebug
