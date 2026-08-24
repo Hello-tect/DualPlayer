@@ -2,7 +2,7 @@ name: Build Dual Player APK
 
 on:
   workflow_dispatch:
-
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,11 +27,17 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build APK
-        run: |
-          cd project
-          gradle assembleDebug
+      - name: Fix JVM target
+  run: |
+    cd project
+    find . -name "*.gradle" -type f -print0 | xargs -0 sed -i \
+      -e 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' \
+      -e 's/jvmTarget *= *["'\'']1\.8["'\'']/jvmTarget = '\''17'\''/g'
 
+- name: Build APK
+  run: |
+    cd project
+    gradle assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
