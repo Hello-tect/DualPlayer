@@ -17,7 +17,7 @@ jobs:
           unzip -o DualPlayerSource.zip -d project
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -27,44 +27,23 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Create JVM fix
+      - name: Make Gradle executable
         run: |
-          cat > jvm-fix.gradle <<'EOF'
-          allprojects {
-              tasks.withType(JavaCompile).configureEach {
-                  options.release.set(17)
-              }
-
-              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                  kotlinOptions.jvmTarget = "17"
-              }
-          }
-          EOF
+          cd project
+          chmod +x gradlew 2>/dev/null || true
 
       - name: Build APK
         run: |
           cd project
-          gradle -I ../jvm-fix.gradle assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: DualPlayer-debug-apk
-          path: project/app/build/outputs/apk/debug/app-debug.apk              }
-
-              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                  kotlinOptions.jvmTarget = "17"
-              }
-          }
-          EOF
-
-      - name: Build APK
-        run: |
-          cd project
-          gradle -I jvm-fix.gradle assembleDebug
+          if [ -f ./gradlew ]; then
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DualPlayer-debug-apk
           path: project/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
