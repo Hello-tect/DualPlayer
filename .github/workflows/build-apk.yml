@@ -27,14 +27,30 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Fix JVM target
+      - name: Create JVM fix
         run: |
-          cd project
           cat > jvm-fix.gradle <<'EOF'
           allprojects {
               tasks.withType(JavaCompile).configureEach {
-                  options.release = 17
+                  options.release.set(17)
               }
+
+              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                  kotlinOptions.jvmTarget = "17"
+              }
+          }
+          EOF
+
+      - name: Build APK
+        run: |
+          cd project
+          gradle -I ../jvm-fix.gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DualPlayer-debug-apk
+          path: project/app/build/outputs/apk/debug/app-debug.apk              }
 
               tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
                   kotlinOptions.jvmTarget = "17"
